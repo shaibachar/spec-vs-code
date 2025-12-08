@@ -174,7 +174,7 @@ class GitClient:
             logger.info(f"Successfully committed TODO.md to {spec_repo_url}")
             
         except subprocess.CalledProcessError as e:
-            error_msg = e.stderr.decode('utf-8', errors='ignore') if e.stderr and hasattr(e.stderr, 'decode') else str(e)
+            error_msg = str(e.stderr if e.stderr else e)
             safe_error = sanitize_error_message(error_msg, token)
             logger.error(f"Failed to commit TODO.md: {safe_error}")
             raise Exception(f"Failed to commit TODO.md: {safe_error}")
@@ -189,9 +189,23 @@ class GitClient:
             workspace: Path to workspace
         """
         try:
-            # Safety check: only delete under workspace_base
-            if workspace.startswith(self.workspace_base) and os.path.exists(workspace):
-                shutil.rmtree(workspace)
-                logger.info(f"Cleaned up workspace: {workspace}")
+            # Safety checks
+            # 1. Only delete under workspace_base
+            if not workspace.startswith(self.workspace_base):
+                logger.error(f"Refusing to delete workspace outside base: {workspace}")
+                return
+            
+            # 2. Check for directory traversal attempts
+            normalized_path = os.path.normpath(workspace)
+            if '..' in normalized_path or not normalized_path.startswith(self.workspace_base):
+                logger.error(f"Refusing to delete workspace with suspicious path: {workspace}")
+                return
+            
+            # 3. Verify it exists
+            if not os.path.exists(workspace):
+                return
+            
+            shutil.rmtree(workspace)
+            logger.info(f"Cleaned up workspace: {workspace}")
         except Exception as e:
             logger.error(f"Failed to cleanup workspace {workspace}: {e}")

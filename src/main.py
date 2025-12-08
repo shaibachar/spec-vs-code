@@ -21,13 +21,21 @@ def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
     
+    # Validate critical configuration at startup
+    api_key = os.getenv('API_KEY')
+    if not api_key:
+        logger.error("API_KEY environment variable is not set!")
+        logger.error("The service requires API_KEY to be configured for authentication.")
+        logger.error("Set API_KEY in your .env file or environment variables.")
+        raise ValueError("API_KEY is required but not configured")
+    
     # Configure CORS
     CORS(app)
     
     # Configuration
     app.config['SERVICE_PORT'] = int(os.getenv('SERVICE_PORT', 8080))
     app.config['MAX_CONCURRENT_CHECKS'] = int(os.getenv('MAX_CONCURRENT_CHECKS', 3))
-    app.config['API_KEY'] = os.getenv('API_KEY')
+    app.config['API_KEY'] = api_key
     
     # Register blueprints
     app.register_blueprint(api_blueprint, url_prefix='/api/v1')

@@ -73,18 +73,18 @@ def validate_git_url(url: str) -> bool:
     if not url or not isinstance(url, str):
         return False
     
-    # Check for common Git URL patterns (more flexible)
+    # Check for common Git URL patterns (more restrictive)
     patterns = [
-        # HTTPS with .git
-        r'^https?://[\w\-\.]+(:\d+)?/[\w\-\./@]+\.git$',
-        # HTTPS without .git (allows more characters in repo name)
-        r'^https?://[\w\-\.]+(:\d+)?/[\w\-\./@]+$',
+        # HTTPS with .git - @ only allowed in authority section
+        r'^https?://(?:[\w\-\.]+@)?[\w\-\.]+(:\d+)?/[\w\-\./]+\.git$',
+        # HTTPS without .git
+        r'^https?://(?:[\w\-\.]+@)?[\w\-\.]+(:\d+)?/[\w\-\./]+$',
         # SSH with .git
-        r'^git@[\w\-\.]+:[\w\-\./@]+\.git$',
+        r'^git@[\w\-\.]+:[\w\-\./]+\.git$',
         # SSH without .git
-        r'^git@[\w\-\.]+:[\w\-\./@]+$',
+        r'^git@[\w\-\.]+:[\w\-\./]+$',
         # Git protocol
-        r'^git://[\w\-\.]+(:\d+)?/[\w\-\./@]+\.git$',
+        r'^git://[\w\-\.]+(:\d+)?/[\w\-\./]+\.git$',
     ]
     
     for pattern in patterns:
