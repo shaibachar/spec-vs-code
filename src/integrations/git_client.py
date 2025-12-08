@@ -129,9 +129,18 @@ class GitClient:
                 workspace
             ], check=True, timeout=60, capture_output=True)
             
-            # Write TODO.md
+            # Write TODO.md with path validation
             todo_path = os.path.join(workspace, 'TODO.md')
-            with open(todo_path, 'w') as f:
+            
+            # Ensure the path is within workspace (prevent directory traversal)
+            if not os.path.abspath(todo_path).startswith(os.path.abspath(workspace)):
+                raise Exception("Invalid TODO.md path")
+            
+            # Validate content size (max 10MB)
+            if len(todo_content) > 10 * 1024 * 1024:
+                raise Exception("TODO content exceeds maximum size")
+            
+            with open(todo_path, 'w', encoding='utf-8') as f:
                 f.write(todo_content)
             
             # Configure git user
@@ -165,7 +174,7 @@ class GitClient:
             logger.info(f"Successfully committed TODO.md to {spec_repo_url}")
             
         except subprocess.CalledProcessError as e:
-            error_msg = e.stderr.decode() if e.stderr else str(e)
+            error_msg = e.stderr.decode('utf-8', errors='ignore') if e.stderr and hasattr(e.stderr, 'decode') else str(e)
             safe_error = sanitize_error_message(error_msg, token)
             logger.error(f"Failed to commit TODO.md: {safe_error}")
             raise Exception(f"Failed to commit TODO.md: {safe_error}")

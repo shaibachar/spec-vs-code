@@ -180,6 +180,7 @@ class ComplianceChecker:
         """Load specification files"""
         spec_dir = os.path.join(repo_path, 'spec')
         specs = []
+        max_file_size = 5 * 1024 * 1024  # 5MB limit per spec file
         
         if not os.path.exists(spec_dir):
             logger.warning(f"No spec directory found in {repo_path}")
@@ -190,7 +191,12 @@ class ComplianceChecker:
             for spec_file in spec_files:
                 spec_path = os.path.join(repo_path, spec_file)
                 if os.path.exists(spec_path):
-                    with open(spec_path, 'r') as f:
+                    file_size = os.path.getsize(spec_path)
+                    if file_size > max_file_size:
+                        logger.warning(f"Spec file {spec_file} too large ({file_size} bytes), skipping")
+                        continue
+                    
+                    with open(spec_path, 'r', encoding='utf-8', errors='ignore') as f:
                         specs.append({
                             'file': spec_file,
                             'content': f.read()
@@ -200,7 +206,12 @@ class ComplianceChecker:
             for filename in os.listdir(spec_dir):
                 if filename.endswith('.md'):
                     spec_path = os.path.join(spec_dir, filename)
-                    with open(spec_path, 'r') as f:
+                    file_size = os.path.getsize(spec_path)
+                    if file_size > max_file_size:
+                        logger.warning(f"Spec file {filename} too large ({file_size} bytes), skipping")
+                        continue
+                    
+                    with open(spec_path, 'r', encoding='utf-8', errors='ignore') as f:
                         specs.append({
                             'file': f'spec/{filename}',
                             'content': f.read()
@@ -214,6 +225,11 @@ class ComplianceChecker:
         try:
             spec_repo_url = os.getenv('SPEC_REPO_URL')
             git_token = os.getenv('GIT_TOKEN')
+            
+            # Validate TODO content size (max 10MB)
+            if len(todo_content) > 10 * 1024 * 1024:
+                logger.error(f"TODO content too large: {len(todo_content)} bytes")
+                raise Exception("TODO content exceeds maximum size of 10MB")
             
             self.git_client.commit_todo_file(
                 spec_repo_url=spec_repo_url,

@@ -25,9 +25,14 @@ def require_api_key(f):
         expected_key = os.getenv('API_KEY')
         
         if not expected_key:
-            # If no API key is configured, allow all requests (dev mode)
-            logger.warning("No API_KEY configured - running in insecure mode")
-            return f(*args, **kwargs)
+            # API key must be configured for security
+            logger.error("API_KEY not configured - authentication required")
+            return jsonify({
+                'error': {
+                    'code': 'CONFIGURATION_ERROR',
+                    'message': 'API key authentication is not configured. Set API_KEY environment variable.'
+                }
+            }), 500
         
         if api_key != expected_key:
             return jsonify({

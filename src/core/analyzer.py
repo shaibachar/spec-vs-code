@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 class SpecAnalyzer:
     """Analyzes code compliance against specifications using Ollama"""
     
+    # Configuration constants
+    MAX_FILE_READ_SIZE = 10 * 1024  # 10KB - configurable file read limit
+    
     def __init__(self, ollama_client):
         self.ollama_client = ollama_client
     
@@ -171,7 +174,8 @@ class SpecAnalyzer:
                         continue
                     try:
                         with open(f, 'r', encoding='utf-8', errors='ignore') as file:
-                            content = file.read(10000)  # Read max 10KB per file
+                            # Read limited content to avoid memory issues
+                            content = file.read(self.MAX_FILE_READ_SIZE)
                             if 'auth' in content.lower():
                                 has_auth = True
                                 break
