@@ -6,9 +6,43 @@ import shutil
 import logging
 import subprocess
 import uuid
+import urllib.parse
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+def sanitize_error_message(message: str, token: Optional[str]) -> str:
+    """
+    Sanitize error message by removing sensitive tokens
+    
+    Args:
+        message: Error message to sanitize
+        token: Token to remove from message
+        
+    Returns:
+        Sanitized message
+    """
+    if not token:
+        return message
+    
+    # Replace token in various forms
+    sanitized = message
+    
+    # Direct token match
+    sanitized = sanitized.replace(token, '***TOKEN***')
+    
+    # URL-encoded token
+    try:
+        encoded_token = urllib.parse.quote(token)
+        sanitized = sanitized.replace(encoded_token, '***TOKEN***')
+    except Exception:
+        pass
+    
+    # Token in URL format (https://token@...)
+    sanitized = sanitized.replace(f'{token}@', '***TOKEN***@')
+    sanitized = sanitized.replace(f'/{token}@', '/***TOKEN***@')
+    
+    return sanitized
 
 class GitClient:
     """Handles Git operations for repository cloning and committing"""
@@ -64,8 +98,7 @@ class GitClient:
         except subprocess.CalledProcessError as e:
             self.cleanup_workspace(workspace)
             error_msg = e.stderr if e.stderr else str(e)
-            # Don't log token if it's in the error
-            safe_error = error_msg.replace(token, '***') if token else error_msg
+            safe_error = sanitize_error_message(error_msg, token)
             raise Exception(f"Failed to clone repository: {safe_error}")
     
     def commit_todo_file(self, spec_repo_url: str, todo_content: str,
@@ -133,7 +166,7 @@ class GitClient:
             
         except subprocess.CalledProcessError as e:
             error_msg = e.stderr.decode() if e.stderr else str(e)
-            safe_error = error_msg.replace(token, '***') if token else error_msg
+            safe_error = sanitize_error_message(error_msg, token)
             logger.error(f"Failed to commit TODO.md: {safe_error}")
             raise Exception(f"Failed to commit TODO.md: {safe_error}")
         finally:

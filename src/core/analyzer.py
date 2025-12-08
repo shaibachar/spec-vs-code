@@ -2,6 +2,7 @@
 Spec Analyzer - Uses Ollama to analyze code against specifications
 """
 import os
+import re
 import logging
 from typing import List, Dict, Optional
 
@@ -126,7 +127,6 @@ class SpecAnalyzer:
         requirements = []
         
         # Look for numbered requirements (FR-1, NFR-1, etc.)
-        import re
         req_pattern = r'((?:FR|NFR|SR)-\d+):?\s*(.+?)(?=\n|$)'
         
         for match in re.finditer(req_pattern, spec_content):
@@ -165,8 +165,18 @@ class SpecAnalyzer:
             # and we don't find related code, flag it
             if 'authentication' in req_text or 'auth' in req_text:
                 # Check if any code file mentions auth
-                has_auth = any('auth' in open(f, 'r', encoding='utf-8', errors='ignore').read().lower() 
-                             for f in code_files[:10] if os.path.exists(f))
+                has_auth = False
+                for f in code_files[:10]:
+                    if not os.path.exists(f):
+                        continue
+                    try:
+                        with open(f, 'r', encoding='utf-8', errors='ignore') as file:
+                            content = file.read(10000)  # Read max 10KB per file
+                            if 'auth' in content.lower():
+                                has_auth = True
+                                break
+                    except Exception:
+                        continue
                 
                 if not has_auth:
                     return {
