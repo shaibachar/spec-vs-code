@@ -19,13 +19,11 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Virtual environments
 venv/
 env/
 ENV/
-
-# Environment
-.env
-.env.local
 
 # IDE
 .vscode/
@@ -37,6 +35,10 @@ ENV/
 # Logs
 *.log
 logs/
+
+# Environment
+.env
+.env.local
 
 # Testing
 .pytest_cache/
@@ -51,19 +53,20 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Docker
+.dockerignore
+
+# Git
+.git/
+.gitignore
+
+# Documentation build
+docs/_build/
+
 # Compiled class file
 *.class
 
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
+# Package Files
 *.jar
 *.war
 *.nar
@@ -71,7 +74,3 @@ Thumbs.db
 *.zip
 *.tar.gz
 *.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*

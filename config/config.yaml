@@ -1,0 +1,92 @@
+# Spec Compliance Checker Configuration
+
+# Analysis Configuration
+analysis:
+  # Analysis depth: quick, standard, deep
+  depth: standard
+  
+  # Include/exclude patterns
+  include_paths:
+    - "src/**"
+    - "lib/**"
+  
+  exclude_paths:
+    - "**/*_test.py"
+    - "**/*_test.go"
+    - "**/vendor/**"
+    - "**/node_modules/**"
+    - "**/__pycache__/**"
+  
+  # Severity threshold: low, medium, high, critical
+  min_severity: medium
+  
+  # Maximum repository size in MB
+  max_repo_size_mb: 1024
+  
+  # Timeout for single check in minutes
+  check_timeout_minutes: 10
+
+# Ollama Configuration
+ollama:
+  # Model to use for analysis
+  model: codellama:7b-instruct
+  
+  # Alternative models (fallback)
+  fallback_models:
+    - codellama:7b
+    - llama2:7b
+  
+  # Generation parameters
+  temperature: 0.1
+  max_tokens: 2000
+  
+  # Request timeout in seconds
+  timeout: 30
+  
+  # Maximum retries for failed requests
+  max_retries: 3
+
+# Git Configuration
+git:
+  # Clone depth (shallow clone)
+  clone_depth: 1
+  
+  # Clone timeout in seconds
+  clone_timeout: 300
+  
+  # Commit message template
+  commit_message_template: |
+    chore: Update compliance check results for {repository}
+    
+    - Check ID: {check_id}
+    - Branch: {branch}
+    - Issues Found: {issue_count}
+    - Timestamp: {timestamp}
+
+# Service Configuration
+service:
+  # API port
+  port: 8080
+  
+  # Maximum concurrent compliance checks
+  max_concurrent_checks: 3
+  
+  # Enable response caching
+  cache_enabled: true
+  
+  # Cache TTL in seconds
+  cache_ttl: 3600
+
+# Reporting Configuration
+reporting:
+  # Include fix suggestions in TODO.md
+  include_suggestions: true
+  
+  # Include code examples in TODO.md
+  include_examples: true
+  
+  # Maximum issues per severity level
+  max_issues_per_severity: 50
+  
+  # Group issues by file or by severity
+  group_by: severity  # severity or file

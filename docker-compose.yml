@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # Ollama LLM Server
+  ollama:
+    image: ollama/ollama:latest
+    container_name: spec-checker-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_MODELS=/root/.ollama/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - spec-checker-network
+
+  # Spec Compliance Service
+  spec-checker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spec-checker-service
+    ports:
+      - "8080:8080"
+    environment:
+      # Ollama Configuration
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=codellama:7b-instruct
+      
+      # Service Configuration
+      - SERVICE_PORT=8080
+      - LOG_LEVEL=INFO
+      - MAX_CONCURRENT_CHECKS=3
+      
+      # Git Configuration
+      - GIT_TOKEN=${GIT_TOKEN}
+      - SPEC_REPO_URL=${SPEC_REPO_URL}
+      - GIT_USER_NAME=${GIT_USER_NAME:-Spec Checker Bot}
+      - GIT_USER_EMAIL=${GIT_USER_EMAIL:-spec-checker@example.com}
+      
+      # Analysis Configuration
+      - ANALYSIS_DEPTH=standard
+      - MIN_SEVERITY=medium
+      - CACHE_ENABLED=true
+      - MAX_REPO_SIZE_MB=1024
+      
+      # Security
+      - API_KEY=${API_KEY}
+      
+    volumes:
+      - ./config:/app/config:ro
+      - checker-tmp:/tmp/spec-checker
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - spec-checker-network
+
+  # Optional: Model initialization service
+  # Pulls the CodeLlama model on first startup
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: spec-checker-ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama-data:/root/.ollama
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      echo 'Pulling CodeLlama model...' &&
+      ollama pull codellama:7b-instruct &&
+      echo 'Model pulled successfully'
+      "
+    networks:
+      - spec-checker-network
+    restart: "no"
+
+volumes:
+  ollama-data:
+    driver: local
+  checker-tmp:
+    driver: local
+
+networks:
+  spec-checker-network:
+    driver: bridge
